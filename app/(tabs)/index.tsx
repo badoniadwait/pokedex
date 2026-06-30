@@ -1,98 +1,137 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-export default function HomeScreen() {
+interface Pokemon {
+  name: String;
+  image: String;
+  imageBack: String;
+  types: PokemonType[];
+}
+
+interface PokemonType {
+  type: {
+    name:"fairy";
+    url:"https://pokeapi.co/api/v2/type/18/";
+  }
+}
+
+export default function Index() {
+  const [pokemons, setPokemon] = useState<Pokemon[]>([]);
+  useEffect(() => {
+    fetchPokemons();
+  }, []);
+
+  async function fetchPokemons() {
+    try {
+      const response = await fetch("https://pokeapi.co/api/v2/pokemon/?limit=20");
+      const data = await response.json();
+
+      const detailedPokemon = await Promise.all(
+        data.results.map(async (pokemon: any) => {
+          const res = await fetch(pokemon.url);
+          const details = await res.json();
+          return {
+            name: pokemon.name,
+            types: details.types,
+            image: details.sprites.front_shiny,
+            imageBack: details.sprites.back_shiny,
+          }
+        })
+      );
+
+      setPokemon(detailedPokemon);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
-
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ScrollView
+      contentContainerStyle={{
+        gap: 16,
+        padding: 16,
+      }}
+      style={{
+      backgroundColor: "white"
+    }}>
+      {
+        pokemons.map((pokemon) => (
+          <Link key={pokemon.name}
+            href={{pathname: "/details", params: {name: pokemon.name}}}
+            style={
+              {
+                alignSelf: "center",
+              }
+            }
+          >
+            <View  
+              style={{
+                backgroundColor: colorByType[pokemon.types[0].type.name],
+                padding: 20,
+                borderRadius: 35,
+              }}
+              >
+              <Text
+                style={styles.name}
+                >
+                {pokemon.name}
+              </Text>
+              <Text
+                style={styles.type}
+                >
+                {pokemon.types[0].type.name}
+              </Text>
+              <View 
+                style={{flexDirection: "row",}}
+                >
+                <Image
+                  source={{uri: pokemon.image}}
+                  style= { {width: 150 , height: 150 } }
+                  />
+                <Image
+                  source={{uri: pokemon.imageBack}}
+                  style= { {width: 150 , height: 150 } }
+                  />
+              </View>
+            </View>
+          </Link>
+        ))
+      }
+    </ScrollView>
   );
 }
 
+const colorByType = {
+  normal:   "rgb(214, 214, 196)",
+  fighting: "rgb(234, 143, 139)",
+  flying:   "rgb(205, 192, 250)",
+  poison:   "rgb(213, 164, 212)",
+  ground:   "rgb(243, 223, 168)",
+  rock:     "rgb(219, 206, 137)",
+  bug:      "rgb(208, 224, 132)",
+  ghost:    "rgb(181, 164, 208)",
+  steel:    "rgb(220, 220, 232)",
+  fire:     "rgb(248, 184, 131)",
+  water:    "rgb(164, 192, 248)",
+  grass:    "rgb(177, 225, 149)",
+  electric: "rgb(252, 231, 138)",
+  psychic:  "rgb(252, 165, 194)",
+  ice:      "rgb(197, 236, 234)",
+  dragon:   "rgb(170, 143, 252)",
+  dark:     "rgb(170, 153, 143)",
+  fairy:    "rgb(236, 190, 215)",
+}
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  name: {
+    fontSize: 28,
+    fontWeight: "bold",
+    textAlign: "center",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  type: {
+    fontSize: 28,
+    fontWeight: "condensed",
+    textAlign: "center",
+  }
 });
